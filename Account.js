@@ -22,7 +22,7 @@ Account.create = async (connection, userId) => {
     try {
         const [response] = await connection.execute(query);
         return {
-            operation: 'create_account',
+            operation: 'account_create',
             id: response.insertId,
             accountNumber,
         }
@@ -44,7 +44,8 @@ Account.balance = async (connection, accountNumber) => {
 
     const query = 'SELECT `money`\
                     FROM `accounts`\
-                    WHERE `account_number` = "' + accountNumber + '"';
+                    WHERE `account_number` = "' + accountNumber + '"\
+                        AND `isActive` = 1';
     try {
         const [rows] = await connection.execute(query);
 
@@ -53,6 +54,68 @@ Account.balance = async (connection, accountNumber) => {
                 operation: 'balance',
                 money: rows[0].money
             };
+        } else {
+            return false;
+        }
+    } catch (error) {
+        return error;
+    }
+}
+
+/**
+ * Vartotojo saskaitos aktyvumo statusas.
+ * @param {Object} connection Objektas, su kuriuo kvieciame duombazes mainpuliavimo metodus.
+ * @param {string} accountNumber Vartotojo banko saskaitos numeris.
+ * @returns {Promise<object|boolean|Error>} Saskaitos aktyvumo objektas.
+ */
+Account.isActive = async (connection, accountNumber) => {
+    if (!Valid.accountNumber(accountNumber)) {
+        return false;
+    }
+
+    const query = 'SELECT `isActive`\
+                    FROM `accounts`\
+                    WHERE `account_number` = "' + accountNumber + '"';
+    try {
+        const [rows] = await connection.execute(query);
+
+        if (rows.length === 1) {
+            return rows[0].isActive === 1 ? true : false;
+        } else {
+            return false;
+        }
+    } catch (error) {
+        return error;
+    }
+}
+
+/**
+ * Vartotojo saskaitos uzdarymas.
+ * @param {Object} connection Objektas, su kuriuo kvieciame duombazes mainpuliavimo metodus.
+ * @param {string} accountNumber Vartotojo banko saskaitos numeris.
+ * @returns {Promise<object|boolean|Error>} Uzdarytos saskaitos objektas.
+ */
+Account.delete = async (connection, accountNumber) => {
+    if (!Valid.accountNumber(accountNumber)) {
+        return false;
+    }
+
+    const currentBalance = await Account.balance(connection, accountNumber);
+    if (!Valid.money(currentBalance.money) ||
+        currentBalance.money !== 0) {
+        return false;
+    }
+
+    const query = 'UPDATE `accounts`\
+                    SET `isActive` = 0\
+                    WHERE `account_number` = "' + accountNumber + '"';
+    try {
+        const [response] = await connection.execute(query);
+        if (response.affectedRows === 1 && response.changedRows === 1) {
+            return {
+                operation: 'account_delete',
+                accountNumber,
+            }
         } else {
             return false;
         }
@@ -76,7 +139,8 @@ Account.deposit = async (connection, accountNumber, cashAmount) => {
 
     const query = 'UPDATE `accounts`\
                     SET `money` = `money` + '+ cashAmount + '\
-                    WHERE `account_number` = "' + accountNumber + '"';
+                    WHERE `account_number` = "' + accountNumber + '"\
+                        AND `isActive` = 1';
     try {
         const [response] = await connection.execute(query);
         if (response.affectedRows === 1 && response.changedRows === 1) {
@@ -114,7 +178,8 @@ Account.withdraw = async (connection, accountNumber, cashAmount) => {
 
     const query = 'UPDATE `accounts`\
                     SET `money` = `money` - '+ cashAmount + '\
-                    WHERE `account_number` = "' + accountNumber + '"';
+                    WHERE `account_number` = "' + accountNumber + '"\
+                        AND `isActive` = 1';
     try {
         const [response] = await connection.execute(query);
 
@@ -144,6 +209,11 @@ Account.transfer = async (connection, senderAccountNumber, receiverAccountNumber
     if (!Valid.accountNumber(senderAccountNumber) ||
         !Valid.accountNumber(receiverAccountNumber) ||
         !Valid.money(cashAmount)) {
+        return false;
+    }
+
+    const receiverAccountIsActive = await Account.isActive(connection, receiverAccountNumber);
+    if (!receiverAccountIsActive) {
         return false;
     }
 

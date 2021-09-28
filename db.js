@@ -42,6 +42,7 @@ db.createTableUsers = async (connection) => {
                         `id` int(10) NOT NULL AUTO_INCREMENT,\
                         `firstname` char(20) COLLATE utf8_swedish_ci NOT NULL,\
                         `lastname` char(20) COLLATE utf8_swedish_ci NOT NULL,\
+                        `isActive` tinyint(1) DEFAULT 1 NOT NULL,\
                         PRIMARY KEY(`id`)\
                     ) ENGINE = InnoDB DEFAULT CHARSET = utf8 COLLATE = utf8_swedish_ci';
         await connection.execute(sql);
@@ -59,6 +60,7 @@ db.createTableAccounts = async (connection) => {
                             `user_id` int(10) NOT NULL,\
                             `account_number` char(20) NOT NULL,\
                             `money` int(10) DEFAULT 0 NOT NULL,\
+                            `isActive` tinyint(1) DEFAULT 1 NOT NULL,\
                             PRIMARY KEY(`id`)\
                         ) ENGINE = InnoDB DEFAULT CHARSET = utf8 COLLATE = utf8_swedish_ci';
         await connection.execute(query);

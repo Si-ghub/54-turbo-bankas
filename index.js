@@ -49,6 +49,16 @@ app.init = async () => {
     const sonatosTransfer1 = await Account.transfer(conn, sonata.accountNumber, maryte.accountNumber, 200);
 
     console.log(sonatosTransfer1);
+
+    const jonoDelete = await User.delete(conn, jonas.id);
+    const sonatosDelete = await User.delete(conn, sonata.id);
+
+    console.log(jonoDelete);
+    console.log(sonatosDelete);
+
+    const sonatosTransfer2 = await Account.transfer(conn, sonata.accountNumber, jonas.accountNumber, 50);
+
+    console.log(sonatosTransfer2);
 }
 
 app.init();
