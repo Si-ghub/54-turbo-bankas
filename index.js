@@ -45,6 +45,10 @@ app.init = async () => {
 
     console.log(sonatosWithdraw1);
     console.log(sonatosWithdraw2);
+
+    const sonatosTransfer1 = await Account.transfer(conn, sonata.accountNumber, maryte.accountNumber, 200);
+
+    console.log(sonatosTransfer1);
 }
 
 app.init();

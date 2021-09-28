@@ -132,4 +132,44 @@ Account.withdraw = async (connection, accountNumber, cashAmount) => {
     }
 }
 
+/**
+ * Pinigu pervedimas is vieno vartotojo nurodytos saskaitos i kito vartotojo nurodyta saskaita.
+ * @param {Object} connection Objektas, su kuriuo kvieciame duombazes mainpuliavimo metodus.
+ * @param {string} senderAccountNumber Siunciancio vartotojo banko saskaitos numeris.
+ * @param {string} receiverAccountNumber Gaunancio vartotojo banko saskaitos numeris.
+ * @param {number} cashAmount Pervedamas pinigu sumos kiekis (centais).
+ * @returns {Promise<object|boolean|Error>} Pinigu pervedimo objektas.
+ */
+Account.transfer = async (connection, senderAccountNumber, receiverAccountNumber, cashAmount) => {
+    if (!Valid.accountNumber(senderAccountNumber) ||
+        !Valid.accountNumber(receiverAccountNumber) ||
+        !Valid.money(cashAmount)) {
+        return false;
+    }
+
+    const currentBalance = await Account.balance(connection, senderAccountNumber);
+    if (!Valid.money(currentBalance.money) ||
+        currentBalance.money < cashAmount) {
+        return false;
+    }
+
+    try {
+        const withdrawResponse = await Account.withdraw(connection, senderAccountNumber, cashAmount);
+        const depositResponse = await Account.deposit(connection, receiverAccountNumber, cashAmount);
+
+        if (withdrawResponse !== false && depositResponse !== false) {
+            return {
+                operation: 'transfer',
+                cashAmount,
+                sender: senderAccountNumber,
+                receiver: receiverAccountNumber,
+            }
+        } else {
+            return false;
+        }
+    } catch (error) {
+        return error;
+    }
+}
+
 module.exports = Account;
